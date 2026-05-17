@@ -155,5 +155,3 @@ When you have a domain:
 6. Push the `lib/resend.ts` change → Vercel auto-deploys
 
 No domain and want a free option? Use **Nodemailer + Gmail SMTP** — create a Gmail account, generate an App Password, and send from that. 500 emails/day free.
-
-Test
