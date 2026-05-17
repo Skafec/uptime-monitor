@@ -5,15 +5,18 @@
 Everything needed before the first paying customer.
 
 ### Infrastructure
-- [ ] Create Supabase project (free tier) and run `supabase/schema.sql` in SQL Editor
-- [ ] Create Resend account, verify a sender domain, update `from` address in `lib/resend.ts`
-- [ ] Create Stripe account, add a product "UptimeWatch Pro" priced at $9/month (recurring)
-- [ ] Copy the Stripe Price ID into `STRIPE_PRO_PRICE_ID` env var
-- [ ] Register a domain (e.g. uptimewatch.io) — ~$10/year on Namecheap or Cloudflare Registrar
-- [ ] Push repo to GitHub
-- [ ] Deploy to Vercel (free tier) — connect GitHub repo, add all env vars from `.env.example`
-- [ ] Add Stripe webhook: `https://your-domain.com/api/stripe/webhook`, events: `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`
-- [ ] Verify the cron job fires in Vercel Dashboard → Functions → Cron Jobs
+- [x] ~~Create Supabase project (free tier) and run `supabase/schema.sql` in SQL Editor~~
+- [x] ~~Grant service_role table access (`GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role`)~~
+- [x] ~~Push repo to GitHub~~
+- [x] ~~Deploy to Vercel (Hobby tier) — connected to GitHub, env vars set~~
+- [x] ~~Set up cron-job.org to trigger `/api/cron/check` every 5 minutes with `Authorization: Bearer <CRON_SECRET>`~~ (Vercel Hobby doesn't support sub-daily crons)
+- [ ] Create Resend account, verify a sender domain, update `from` address in `lib/resend.ts`, add `RESEND_API_KEY` to Vercel
+- [ ] Create Stripe account, add product "UptimeWatch Pro" at $9/month recurring
+- [ ] Copy Stripe Price ID into `STRIPE_PRO_PRICE_ID` env var
+- [ ] Add Stripe webhook: `https://your-vercel-url.vercel.app/api/stripe/webhook`, events: `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`
+- [ ] Add `STRIPE_WEBHOOK_SECRET` to Vercel env vars
+- [ ] Set `NEXT_PUBLIC_APP_URL` in Vercel env vars to the live deployment URL
+- [ ] Register a domain — ~$10/year on Namecheap or Cloudflare Registrar
 
 ### Legal (required before taking payments)
 - [x] ~~Write a Privacy Policy~~ — `app/privacy/page.tsx` written, covers data collection, third parties, retention, user rights, GDPR
@@ -23,12 +26,13 @@ Everything needed before the first paying customer.
 - [ ] Add cookie consent banner if targeting EU users (GDPR)
 
 ### Pre-launch testing
-- [ ] Sign up as a real user, add 3 monitors, wait 10 minutes and verify checks appear
-- [ ] Take one monitored URL down (return 500) and verify down alert email arrives
+- [x] ~~Verify cron job hits the endpoint and processes monitors (confirmed via cron-job.org test run)~~
+- [ ] Sign up as a real user, add monitors, verify checks appear in Supabase `monitor_checks` table
+- [ ] Take one monitored URL down and verify down alert email arrives (needs Resend set up first)
 - [ ] Bring it back up and verify recovery email arrives
 - [ ] Complete a Stripe test checkout (use card `4242 4242 4242 4242`) and verify plan updates to Pro
 - [ ] Cancel the Stripe subscription and verify plan downgrades to Free
-- [ ] Set a status page slug and verify the public page is accessible and indexed-able
+- [ ] Set a status page slug and verify the public page is accessible
 
 ---
 
@@ -164,7 +168,8 @@ Features worth building eventually — not time-sensitive.
 
 ## Known Issues & Tech Debt
 
-- `proxy.ts` uses Next.js 16 API naming (`proxy.ts` instead of `middleware.ts`) — verify behaviour on Vercel deployment, may need to rename depending on the deployed Next.js version
+- `proxy.ts` uses Next.js 16 API naming (`proxy.ts` instead of `middleware.ts`) — verified working on Vercel deployment; may need renaming if Next.js version changes
 - Public RLS policy on `monitor_checks` is overly permissive (`using (true)`) — scope it to only checks belonging to monitors with a public slug
 - `interval_minutes` column exists on monitors but the cron job runs all monitors every 5 minutes regardless — pro 1-minute checks are not yet differentiated at the cron level
 - Settings page does not yet allow updating the notification email separately from the login email
+- Email alerts (Resend) are not yet active — `RESEND_API_KEY` is not set; down/recovery alert code is wired up but emails will silently fail until Resend is configured

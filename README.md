@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UptimeWatch
 
-## Getting Started
+Website uptime monitoring SaaS. Users add URLs, the app pings them every 5 minutes, and sends email alerts when a site goes down or recovers. Every user gets a public status page at `/status/[slug]`.
 
-First, run the development server:
+## Stack
+
+- **Next.js** (App Router) — framework
+- **Supabase** — Postgres database + auth
+- **Resend** — transactional email alerts
+- **Stripe** — billing ($9/mo Pro plan)
+- **Vercel** — deployment (Hobby tier)
+- **cron-job.org** — external cron trigger (Vercel Hobby does not support sub-daily crons)
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Environment variables are managed in Vercel — see `DEPLOYMENT.md` for the full list and setup guide.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Docs
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `DEPLOYMENT.md` — step-by-step setup and deployment guide
+- `TECHNICAL.md` — architecture, data model, and core logic
+- `ROADMAP.md` — go-live checklist, feature backlog, known issues

@@ -1,7 +1,8 @@
 # UptimeWatch — Deployment Guide
 
-No email notifications for initial launch. Add Resend later when you have a domain.
 All secrets are managed directly in Vercel — no local `.env.local` needed for production.
+
+> **Cron jobs**: Vercel Hobby only allows daily cron jobs. UptimeWatch uses **cron-job.org** (free) to trigger the check endpoint every 5 minutes instead.
 
 ---
 
@@ -17,7 +18,7 @@ All secrets are managed directly in Vercel — no local `.env.local` needed for 
    Then paste the two GitHub commands
 3. Go to **vercel.com → Add New Project → Import Git Repository** → select `uptime-monitor`
 4. Click **Deploy** without adding any env vars — it builds fine, just won't function yet
-5. Note your live URL (e.g. `https://uptime-monitor-karlo.vercel.app`) — you'll need it for every step below
+5. Note your live URL (e.g. `https://uptime-monitor-sand.vercel.app`) — you'll need it for every step below
 
 ---
 
@@ -31,16 +32,22 @@ All secrets are managed directly in Vercel — no local `.env.local` needed for 
 2. Go to **SQL Editor** (left sidebar) → **New query** → paste the entire contents of `supabase/schema.sql` → click **Run**
    - You should see "Success. No rows returned"
 
-3. Go to **Settings → API**, copy these 3 values:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL        ← "Project URL"
-   NEXT_PUBLIC_SUPABASE_ANON_KEY   ← "anon public" under Project API keys
-   SUPABASE_SERVICE_ROLE_KEY       ← "service_role" under Project API keys
+3. Run this second query to grant the service role table access (required for cron job):
+   ```sql
+   GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+   GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
    ```
 
-4. Go to **Authentication → URL Configuration** → set **Site URL** to your Vercel URL
+4. Go to **Settings → API**, copy these values:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL           ← "Project URL"
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY  ← "Publishable" under Project API keys
+   SUPABASE_SERVICE_ROLE_KEY          ← "service_role" under Project API keys (keep secret)
+   ```
 
-5. Add all 3 keys to **Vercel → your project → Settings → Environment Variables**
+5. Go to **Authentication → URL Configuration** → set **Site URL** to your Vercel URL
+
+6. Add all 3 keys to **Vercel → your project → Settings → Environment Variables**
 
 ---
 
@@ -93,16 +100,31 @@ All secrets are managed directly in Vercel — no local `.env.local` needed for 
 openssl rand -hex 32
 ```
 
-Add these final 2 to **Vercel → Environment Variables**:
+Add these to **Vercel → Environment Variables**:
 ```
 CRON_SECRET             ← the hex string you just generated
-NEXT_PUBLIC_APP_URL     ← your full Vercel URL, e.g. https://uptime-monitor-karlo.vercel.app
+NEXT_PUBLIC_APP_URL     ← your full Vercel URL, e.g. https://uptime-monitor-sand.vercel.app
 RESEND_API_KEY          ← leave blank for now, add when email is set up
 ```
 
 ---
 
-## Step 6 — Redeploy
+## Step 6 — Set up cron-job.org
+
+Vercel Hobby does not support cron jobs more frequent than daily. Use cron-job.org (free) instead:
+
+1. Go to **cron-job.org** → create a free account
+2. Create a new cron job:
+   - **URL**: `https://your-vercel-url.vercel.app/api/cron/check`
+   - **Schedule**: every 5 minutes
+3. Open **Advanced** → **Request headers** → click **Add header**:
+   - **Name**: `Authorization`
+   - **Value**: `Bearer <your CRON_SECRET value>`
+4. Save and do a **test run** — you should see a 200 response
+
+---
+
+## Step 7 — Redeploy
 
 Vercel does not auto-redeploy when env vars are added. You must trigger it manually:
 
@@ -112,10 +134,10 @@ Wait ~1 min. The app is now fully live.
 
 ---
 
-## Step 7 — Test everything
+## Step 8 — Test everything
 
 1. **Auth**: go to your live URL → sign up with a real email
-2. **Monitors**: add a URL → wait 5 min → go to **Supabase → Table Editor → monitor_checks** → confirm a row appears
+2. **Monitors**: add a URL → trigger a manual cron test on cron-job.org → go to **Supabase → Table Editor → monitor_checks** → confirm a row appears
 3. **Stripe checkout**: go to Settings → click Upgrade → use test card:
    - Card: `4242 4242 4242 4242`
    - Expiry: any future date
@@ -124,9 +146,8 @@ Wait ~1 min. The app is now fully live.
 5. **Billing portal**: go to Settings → click "Manage billing" → confirm Stripe portal opens
 6. Cancel from portal → check Supabase again → `plan` should flip back to `free`
 7. **Status page**: go to Settings → enter a slug → visit `/status/your-slug` → confirm it's publicly accessible
-8. **Cron job**: go to **Vercel → your project → Settings → Cron Jobs** → confirm the job appears
 
-All 8 pass = you're ready for real users.
+All 7 pass = you're ready for real users.
 
 ---
 

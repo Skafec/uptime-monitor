@@ -132,7 +132,7 @@ All tables have RLS enabled. Users can only read/write their own data. The servi
 
 ### How the cron job works (`app/api/cron/check/route.ts`)
 
-Runs every 5 minutes via Vercel Cron. Flow per monitor:
+Triggered every 5 minutes by **cron-job.org** (not Vercel Cron — Vercel Hobby only supports daily crons). `vercel.json` has no cron entries. The external service sends a GET request with `Authorization: Bearer <CRON_SECRET>`. Flow per monitor:
 
 ```
 Fetch all active monitors (with profile.email join)
@@ -149,7 +149,7 @@ Fetch all active monitors (with profile.email join)
           → sendRecoveryAlert() via Resend
 ```
 
-The cron route requires `Authorization: Bearer <CRON_SECRET>` — Vercel injects this automatically; manually hitting the endpoint without it returns 401.
+The cron route requires `Authorization: Bearer <CRON_SECRET>` — cron-job.org sends this as a request header. Visiting the endpoint directly in a browser returns 401 (expected).
 
 ### How uptime percentage is calculated (`lib/monitor.ts` → `calculateUptimePercentage()`)
 
@@ -228,14 +228,14 @@ Copy `.env.example` to `.env.local` and fill in these values:
 | Variable | Where to get it |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project → Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase project → Settings → API (keep secret) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase project → Settings → API → "Publishable" key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase project → Settings → API → "service_role" (keep secret) |
 | `RESEND_API_KEY` | resend.com → API Keys |
 | `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API Keys |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard → Developers → API Keys |
 | `STRIPE_WEBHOOK_SECRET` | Stripe Dashboard → Webhooks → signing secret |
 | `STRIPE_PRO_PRICE_ID` | Stripe Dashboard → Products → Pro plan → Price ID |
-| `CRON_SECRET` | Any random string (e.g. `openssl rand -hex 32`) |
+| `CRON_SECRET` | Any random string (e.g. `openssl rand -hex 32`) — must match cron-job.org header |
 | `NEXT_PUBLIC_APP_URL` | Your deployed Vercel URL |
 
 ---
@@ -255,7 +255,7 @@ Copy `.env.example` to `.env.local` and fill in these values:
 
 ### As the operator (you)
 
-- **Cron job**: runs automatically on Vercel every 5 minutes. Check Vercel logs under Functions → `/api/cron/check` for run results
+- **Cron job**: triggered by cron-job.org every 5 minutes. Check results in cron-job.org dashboard or Vercel logs under Functions → `/api/cron/check`
 - **Monitor Stripe events**: Stripe Dashboard → Webhooks → recent deliveries
 - **Database**: Supabase Dashboard → Table Editor to view monitors, checks, and incidents directly
 - **Add a new user manually**: they just sign up — the trigger handles profile creation
