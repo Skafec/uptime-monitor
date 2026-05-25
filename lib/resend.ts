@@ -15,7 +15,7 @@ export async function sendDownAlert(params: {
   const resend = getResend()
 
   return resend.emails.send({
-    from: 'UptimeWatch <alerts@uptimewatch.io>',
+    from: 'UptimeWatch <onboarding@resend.dev>',
     to,
     subject: `[DOWN] ${monitorName} is not responding`,
     html: `
@@ -70,7 +70,7 @@ export async function sendRecoveryAlert(params: {
   const resend = getResend()
 
   return resend.emails.send({
-    from: 'UptimeWatch <alerts@uptimewatch.io>',
+    from: 'UptimeWatch <onboarding@resend.dev>',
     to,
     subject: `[RECOVERED] ${monitorName} is back online`,
     html: `
