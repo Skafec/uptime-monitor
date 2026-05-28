@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
+import { isPublicUrl } from '@/lib/monitor'
 
 type MonitorUpdate = Database['public']['Tables']['monitors']['Update']
 
@@ -50,7 +51,15 @@ export async function PATCH(request: Request, { params }: Params) {
   const updateData: MonitorUpdate = {}
 
   if ('name' in body) updateData.name = body.name
-  if ('url' in body) updateData.url = body.url
+  if ('url' in body) {
+    if (!(await isPublicUrl(body.url))) {
+      return NextResponse.json(
+        { error: 'URL must be a public http(s) address' },
+        { status: 400 }
+      )
+    }
+    updateData.url = body.url
+  }
   if ('is_active' in body) updateData.is_active = body.is_active
   if ('interval_minutes' in body) updateData.interval_minutes = body.interval_minutes
 

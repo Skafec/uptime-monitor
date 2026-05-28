@@ -1,3 +1,56 @@
+import { promises as dns } from 'dns'
+
+const PRIVATE_IPV4_RANGES: Array<[number, number]> = [
+  [0x00000000, 0xff000000], // 0.0.0.0/8
+  [0x0a000000, 0xff000000], // 10.0.0.0/8
+  [0x7f000000, 0xff000000], // 127.0.0.0/8
+  [0xa9fe0000, 0xffff0000], // 169.254.0.0/16
+  [0xac100000, 0xfff00000], // 172.16.0.0/12
+  [0xc0a80000, 0xffff0000], // 192.168.0.0/16
+]
+
+function ipv4ToInt(ip: string): number {
+  return ip.split('.').reduce((acc, octet) => (acc << 8) | parseInt(octet, 10), 0) >>> 0
+}
+
+function isPrivateIpv4(ip: string): boolean {
+  const n = ipv4ToInt(ip)
+  return PRIVATE_IPV4_RANGES.some(([net, mask]) => (n & mask) === net)
+}
+
+function isPrivateIpv6(ip: string): boolean {
+  const lower = ip.toLowerCase().replace(/\[|\]/g, '')
+  return (
+    lower === '::1' ||
+    lower.startsWith('fe80:') ||
+    lower.startsWith('fc') ||
+    lower.startsWith('fd') ||
+    lower.startsWith('::ffff:')
+  )
+}
+
+export async function isPublicUrl(rawUrl: string): Promise<boolean> {
+  let parsed: URL
+  try {
+    parsed = new URL(rawUrl)
+  } catch {
+    return false
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+  const host = parsed.hostname.toLowerCase()
+  if (host === 'localhost' || host.endsWith('.localhost')) return false
+  try {
+    const addresses = await dns.lookup(host, { all: true })
+    for (const { address, family } of addresses) {
+      if (family === 4 && isPrivateIpv4(address)) return false
+      if (family === 6 && isPrivateIpv6(address)) return false
+    }
+  } catch {
+    return false
+  }
+  return true
+}
+
 export type PingResult = {
   status: 'up' | 'down'
   statusCode: number | null
@@ -6,6 +59,10 @@ export type PingResult = {
 }
 
 export async function pingUrl(url: string, timeoutMs = 10000): Promise<PingResult> {
+  if (!(await isPublicUrl(url))) {
+    return { status: 'down', statusCode: null, responseTimeMs: 0, error: 'URL is not a public address' }
+  }
+
   const start = Date.now()
 
   try {
