@@ -129,4 +129,11 @@ create policy "Public can view monitors by slug"
 
 create policy "Public can view monitor checks for status pages"
   on monitor_checks for select
-  using (true);
+  using (
+    exists (
+      select 1 from monitors
+      join profiles on profiles.id = monitors.user_id
+      where monitors.id = monitor_checks.monitor_id
+        and profiles.status_page_slug is not null
+    )
+  );
