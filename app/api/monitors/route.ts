@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
+import { isPublicUrl } from '@/lib/monitor'
 
 export async function GET() {
   const supabase = await createServerSupabaseClient()
@@ -43,11 +44,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Name and URL are required' }, { status: 400 })
   }
 
-  // Validate URL
+  // Validate URL format and SSRF safety
   try {
     new URL(url)
   } catch {
     return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+  }
+
+  if (!(await isPublicUrl(url))) {
+    return NextResponse.json(
+      { error: 'URL must be a public http(s) address' },
+      { status: 400 }
+    )
   }
 
   // Check plan limits
