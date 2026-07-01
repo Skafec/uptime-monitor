@@ -58,12 +58,31 @@ export async function POST(request: Request) {
     )
   }
 
-  // Check plan limits
+  // Load plan once — drives both interval gating and the monitor-count limit.
   const { data: profile } = await supabase
     .from('profiles')
     .select('plan')
     .eq('id', user.id)
     .single()
+
+  // Server-side interval gating. Default to 5 minutes; only Pro may pick 1.
+  // Any other value is rejected rather than silently clamped.
+  let interval_minutes = 5
+  if ('interval_minutes' in body) {
+    if (![1, 5].includes(body.interval_minutes)) {
+      return NextResponse.json(
+        { error: 'interval_minutes must be 1 or 5' },
+        { status: 400 }
+      )
+    }
+    if (body.interval_minutes === 1 && profile?.plan !== 'pro') {
+      return NextResponse.json(
+        { error: '1-minute checks require the Pro plan' },
+        { status: 403 }
+      )
+    }
+    interval_minutes = body.interval_minutes
+  }
 
   if (profile?.plan === 'free') {
     const { count } = await supabase
@@ -85,6 +104,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       name,
       url,
+      interval_minutes,
       last_status: 'unknown',
     })
     .select()
