@@ -14,7 +14,22 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const supabase = await createServerSupabaseClient()
-  const { data: monitor } = await supabase.from('monitors').select('name').eq('id', id).single()
+
+  // Authorise before touching monitor data: without a user, or scoped to
+  // someone else's monitor, never surface the monitor's name in metadata.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { title: 'Monitor' }
+
+  const { data: monitor } = await supabase
+    .from('monitors')
+    .select('name')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
   return { title: monitor?.name ?? 'Monitor' }
 }
 
