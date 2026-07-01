@@ -38,6 +38,14 @@ create table if not exists incidents (
   is_resolved boolean default false
 );
 
+-- Processed Stripe webhook event ids, for idempotency. Stripe retries on
+-- non-2xx and can deliver duplicates; the primary key makes reprocessing a
+-- no-op. Written only by the service role, so no RLS policies are defined.
+create table if not exists stripe_events (
+  id text primary key,
+  received_at timestamptz default now()
+);
+
 -- Indexes
 create index if not exists monitors_user_id_idx on monitors(user_id);
 create index if not exists monitor_checks_monitor_id_checked_at_idx on monitor_checks(monitor_id, checked_at desc);
@@ -48,6 +56,9 @@ alter table profiles enable row level security;
 alter table monitors enable row level security;
 alter table monitor_checks enable row level security;
 alter table incidents enable row level security;
+-- RLS on with no policies: denies all anon/authenticated access; the service
+-- role (webhook handler) bypasses RLS and is the only writer.
+alter table stripe_events enable row level security;
 
 -- Profiles policies
 create policy "Users can view own profile"

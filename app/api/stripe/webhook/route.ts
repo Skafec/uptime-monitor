@@ -25,6 +25,26 @@ export async function POST(request: Request) {
 
   const supabase = createServiceSupabaseClient()
 
+  // Idempotency guard. Record the event id before doing any work; an
+  // ON CONFLICT DO NOTHING insert (ignoreDuplicates) returns no rows when the
+  // event was already processed — including when two retries race here, since
+  // only one insert wins. In that case skip the switch entirely so side effects
+  // (plan changes, slug creation) run exactly once.
+  const { data: recorded, error: dedupeError } = await supabase
+    .from('stripe_events')
+    .upsert({ id: event.id }, { onConflict: 'id', ignoreDuplicates: true })
+    .select('id')
+
+  if (dedupeError) {
+    console.error('Failed to record Stripe event:', dedupeError.message)
+    return NextResponse.json({ error: 'Idempotency check failed' }, { status: 500 })
+  }
+
+  if (!recorded || recorded.length === 0) {
+    console.log(`Duplicate Stripe event ${event.id} ignored`)
+    return NextResponse.json({ received: true, duplicate: true })
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -130,6 +150,9 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error(`Error handling event ${event.type}:`, error)
+    // Release the idempotency record so Stripe's retry reprocesses this event
+    // rather than being swallowed as a duplicate after a partial failure.
+    await supabase.from('stripe_events').delete().eq('id', event.id)
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 
