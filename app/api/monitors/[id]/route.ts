@@ -61,7 +61,29 @@ export async function PATCH(request: Request, { params }: Params) {
     updateData.url = body.url
   }
   if ('is_active' in body) updateData.is_active = body.is_active
-  if ('interval_minutes' in body) updateData.interval_minutes = body.interval_minutes
+  if ('interval_minutes' in body) {
+    // Interval is a Pro feature. Load the plan before honouring any change so a
+    // free user can't PATCH their way to 1-minute checks.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.plan !== 'pro') {
+      return NextResponse.json(
+        { error: 'Changing the check interval requires the Pro plan' },
+        { status: 403 }
+      )
+    }
+    if (![1, 5].includes(body.interval_minutes)) {
+      return NextResponse.json(
+        { error: 'interval_minutes must be 1 or 5' },
+        { status: 400 }
+      )
+    }
+    updateData.interval_minutes = body.interval_minutes
+  }
 
   const { data: monitor, error } = await supabase
     .from('monitors')
