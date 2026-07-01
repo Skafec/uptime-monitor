@@ -143,6 +143,21 @@ export type Database = {
           }
         ]
       }
+      stripe_events: {
+        Row: {
+          id: string
+          received_at: string
+        }
+        Insert: {
+          id: string
+          received_at?: string
+        }
+        Update: {
+          id?: string
+          received_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
