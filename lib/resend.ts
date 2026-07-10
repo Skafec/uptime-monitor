@@ -1,5 +1,10 @@
 import { Resend } from 'resend'
 
+// Sender identity. In production set RESEND_FROM to a verified-domain address,
+// e.g. "UptimeWatch <alerts@uptimewatchhq.com>". The resend.dev fallback only
+// delivers to the Resend account owner, so it is dev-only.
+const FROM = process.env.RESEND_FROM ?? 'UptimeWatch <onboarding@resend.dev>'
+
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY!)
 }
@@ -15,7 +20,7 @@ export async function sendDownAlert(params: {
   const resend = getResend()
 
   return resend.emails.send({
-    from: 'UptimeWatch <onboarding@resend.dev>',
+    from: FROM,
     to,
     subject: `[DOWN] ${monitorName} is not responding`,
     html: `
@@ -70,7 +75,7 @@ export async function sendRecoveryAlert(params: {
   const resend = getResend()
 
   return resend.emails.send({
-    from: 'UptimeWatch <onboarding@resend.dev>',
+    from: FROM,
     to,
     subject: `[RECOVERED] ${monitorName} is back online`,
     html: `
