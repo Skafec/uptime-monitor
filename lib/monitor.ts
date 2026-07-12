@@ -73,7 +73,7 @@ export async function pingUrl(url: string, timeoutMs = 10000): Promise<PingResul
       method: 'GET',
       signal: controller.signal,
       headers: {
-        'User-Agent': 'UptimeWatch/1.0 (+https://uptimewatch.io)',
+        'User-Agent': 'UptimeWatch/1.0 (+https://uptimewatchhq.com)',
       },
       redirect: 'follow',
     })

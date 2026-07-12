@@ -126,8 +126,8 @@ export default function TermsPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">11. Contact</h2>
             <p className="text-sm leading-relaxed">
               Questions about these terms? Email{' '}
-              <a href="mailto:legal@uptimewatch.io" className="underline">
-                legal@uptimewatch.io
+              <a href="mailto:support@uptimewatchhq.com" className="underline">
+                support@uptimewatchhq.com
               </a>
               .
             </p>

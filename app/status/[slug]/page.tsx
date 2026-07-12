@@ -217,7 +217,7 @@ export default async function StatusPage({ params }: Props) {
           <p className="text-sm text-gray-400 dark:text-slate-500">
             Powered by{' '}
             <Link
-              href={process.env.NEXT_PUBLIC_APP_URL || 'https://uptimewatch.io'}
+              href={process.env.NEXT_PUBLIC_APP_URL || 'https://uptimewatchhq.com'}
               className="text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
               target="_blank"
               rel="noopener"
@@ -228,7 +228,7 @@ export default async function StatusPage({ params }: Props) {
           </p>
           <p className="text-xs text-gray-300 dark:text-slate-600 mt-1">
             <Link
-              href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://uptimewatch.io'}/signup`}
+              href={`${process.env.NEXT_PUBLIC_APP_URL || 'https://uptimewatchhq.com'}/signup`}
               className="hover:underline"
               target="_blank"
               rel="noopener"

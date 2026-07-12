@@ -100,8 +100,8 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">8. Contact</h2>
             <p className="text-sm leading-relaxed">
               Questions about this policy? Email us at{' '}
-              <a href="mailto:privacy@uptimewatch.io" className="underline">
-                privacy@uptimewatch.io
+              <a href="mailto:support@uptimewatchhq.com" className="underline">
+                support@uptimewatchhq.com
               </a>
               .
             </p>
