@@ -42,6 +42,7 @@ export type Database = {
           is_active: boolean
           last_checked_at: string | null
           last_status: 'up' | 'down' | 'unknown'
+          consecutive_failures: number
           created_at: string
         }
         Insert: {
@@ -53,6 +54,7 @@ export type Database = {
           is_active?: boolean
           last_checked_at?: string | null
           last_status?: 'up' | 'down' | 'unknown'
+          consecutive_failures?: number
           created_at?: string
         }
         Update: {
@@ -64,6 +66,7 @@ export type Database = {
           is_active?: boolean
           last_checked_at?: string | null
           last_status?: 'up' | 'down' | 'unknown'
+          consecutive_failures?: number
           created_at?: string
         }
         Relationships: [

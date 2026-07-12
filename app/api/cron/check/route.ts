@@ -6,6 +6,11 @@ import { sendDownAlert, sendRecoveryAlert } from '@/lib/resend'
 export const runtime = 'nodejs'
 export const maxDuration = 300 // 5 minutes
 
+// Flap protection: require this many consecutive failing checks before we
+// declare an outage (open an incident + email the customer). Prevents a single
+// blip — a DNS hiccup or brief CDN error — from firing a false alert.
+const FAILURE_THRESHOLD = 2
+
 export async function GET(request: Request) {
   // Validate cron secret
   const authHeader = request.headers.get('authorization')
@@ -35,6 +40,7 @@ export async function GET(request: Request) {
         name,
         url,
         last_status,
+        consecutive_failures,
         profiles!inner(email, plan)
       `)
       .eq('is_active', true)
@@ -78,7 +84,8 @@ async function processMonitor(
     user_id: string
     name: string
     url: string
-    last_status: string
+    last_status: 'up' | 'down' | 'unknown'
+    consecutive_failures: number
     profiles: { email: string; plan: string } | { email: string; plan: string }[]
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,12 +114,27 @@ async function processMonitor(
       checked_at: checkedAt,
     })
 
-    // Update monitor last status
+    // Flap protection. Count consecutive failures; only once we cross
+    // FAILURE_THRESHOLD does the *declared* status flip to 'down'. A success
+    // resets the counter and clears the declared status. Sub-threshold failures
+    // are still recorded in monitor_checks above, but don't alert.
+    const previousFailures = monitor.consecutive_failures ?? 0
+    const consecutiveFailures = currentStatus === 'down' ? previousFailures + 1 : 0
+
+    let declaredStatus: 'up' | 'down' | 'unknown' = previousStatus
+    if (currentStatus === 'up') {
+      declaredStatus = 'up'
+    } else if (consecutiveFailures >= FAILURE_THRESHOLD) {
+      declaredStatus = 'down'
+    }
+
+    // Update monitor declared status + failure counter
     await supabase
       .from('monitors')
       .update({
-        last_status: currentStatus,
+        last_status: declaredStatus,
         last_checked_at: checkedAt,
+        consecutive_failures: consecutiveFailures,
       })
       .eq('id', monitor.id)
 
@@ -120,9 +142,9 @@ async function processMonitor(
     const profile = Array.isArray(monitor.profiles) ? monitor.profiles[0] : monitor.profiles
     const userEmail = profile?.email
 
-    // Handle status changes
-    if (previousStatus !== 'down' && currentStatus === 'down') {
-      // Site went DOWN — create incident
+    // Handle status changes (based on the declared status, not the raw ping)
+    if (declaredStatus === 'down' && previousStatus !== 'down') {
+      // Threshold crossed — declare the outage: create incident
       await supabase.from('incidents').insert({
         monitor_id: monitor.id,
         started_at: checkedAt,

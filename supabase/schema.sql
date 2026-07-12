@@ -18,6 +18,7 @@ create table if not exists monitors (
   is_active boolean default true,
   last_checked_at timestamptz,
   last_status text check (last_status in ('up', 'down', 'unknown')) default 'unknown',
+  consecutive_failures int not null default 0,
   created_at timestamptz default now()
 );
 
