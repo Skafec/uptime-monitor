@@ -331,7 +331,7 @@ All shipped and (where applicable) migrated to prod:
 
 ### Legal (required before taking payments)
 - [x] Privacy Policy (`/privacy`) and Terms (`/terms`) written and linked
-- [ ] Replace placeholder contact emails (`privacy@uptimewatch.io`, `legal@uptimewatch.io`) with real ones
+- [x] Replace placeholder contact emails with the real address (`support@uptimewatchhq.com`)
 - [ ] Cookie consent banner if targeting EU users (GDPR)
 
 ### Pre-launch testing (none verified yet)
