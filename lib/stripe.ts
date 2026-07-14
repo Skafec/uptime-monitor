@@ -65,6 +65,13 @@ export async function createPortalSession(params: {
   return session
 }
 
+// Used on account deletion. Deleting the customer cancels any active
+// subscription and removes their payment data from Stripe.
+export async function deleteCustomer(customerId: string) {
+  const stripeClient = getStripe()
+  return stripeClient.customers.del(customerId)
+}
+
 export function constructWebhookEvent(
   body: string,
   signature: string,
