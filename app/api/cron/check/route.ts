@@ -11,6 +11,14 @@ export const maxDuration = 300 // 5 minutes
 // blip — a DNS hiccup or brief CDN error — from firing a false alert.
 const FAILURE_THRESHOLD = 2
 
+// Grace window for due-monitor selection. next_check_at is set to now()+interval
+// at check time, which lands a few seconds past the next cron tick — so without
+// slack the monitor is skipped that tick and effectively runs at ~2x its
+// interval. Treating anything due within this window as "due now" lets it catch
+// the next tick. Must be smaller than the shortest interval (1 min) so a monitor
+// isn't re-selected in the same cycle.
+const DUE_GRACE_MS = 30_000
+
 export async function GET(request: Request) {
   // Validate cron secret
   const authHeader = request.headers.get('authorization')
@@ -48,7 +56,7 @@ export async function GET(request: Request) {
         profiles!inner(email, plan)
       `)
       .eq('is_active', true)
-      .lte('next_check_at', new Date().toISOString())
+      .lte('next_check_at', new Date(Date.now() + DUE_GRACE_MS).toISOString())
 
     if (monitorsError) {
       console.error('Failed to fetch monitors:', monitorsError)
