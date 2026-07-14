@@ -296,10 +296,13 @@ Switch Stripe to **Live mode**, create live keys/product/webhook, update all fou
 
 **Migrations are not applied automatically** — there is no CI or Supabase CLI link. Each file in `supabase/migrations/` must be run **manually** in the Supabase SQL Editor. `schema.sql` is the fresh-install source of truth; migrations are the deltas to apply on an existing DB.
 
+> ⚠️ **New tables need a service-role grant.** The setup-time `GRANT ALL ... TO service_role` only covers tables that existed then. A migration that creates a **new table** must also `grant all on table <name> to service_role;` — otherwise the service-role client (cron, webhook) gets "permission denied" at runtime (this caused a webhook 500 "Idempotency check failed" for `stripe_events`; see T-6).
+
 | Migration | Purpose | Applied to prod |
 |---|---|---|
 | `20260528_tighten_public_rls.sql` | Scope public reads to slug owners (P0-1) | ✅ |
-| `20260701_stripe_events.sql` | Webhook idempotency table (P0-5) | ✅ |
+| `20260701_stripe_events.sql` | Webhook idempotency table + service-role grant (P0-5, T-6) | ✅ |
+| `20260712_consecutive_failures.sql` | Flap-protection counter (P1-1) | ✅ |
 
 To verify a migration landed, e.g.:
 ```sql
@@ -428,3 +431,5 @@ SMS/phone alerts, keyword monitoring, port monitoring, SSL-expiry alerts, DNS mo
 - **T-2 — No edit-monitor UI [medium].** The dashboard only exposes pause/resume and delete; a user can't fix a typo'd URL or rename a monitor without deleting it (and losing its check history). The PATCH API + validation already exist — this just needs a small frontend form wired to `PATCH /api/monitors/[id]`. Files: `components/` (new form), monitor detail page.
 - **T-3 — Auth emails need custom SMTP [go-live].** Supabase's built-in auth email is rate-limited and didn't deliver the signup confirmation. Email confirmation is currently **off** (users reach the dashboard without verifying). Decision + fix: either intentionally keep confirmation off, or enable it and route Supabase auth SMTP through Resend (`smtp.resend.com`, user `resend`, password = Resend API key, sender on `uptimewatchhq.com`). Recommended for an alert product so the alert address is known-valid.
 - **T-4 — New failing monitor shows `unknown` until the 2nd failure [low, by design].** A consequence of flap protection (P1-1): the first failing check keeps the declared status at its previous value, so a brand-new monitor that fails once displays `unknown` rather than `down` until the second consecutive failure. Acceptable, but could be softened in the UI later.
+- **T-5 — Settings page 404 [FIXED].** All links/redirects pointed at `/dashboard/settings`, but the route group `(dashboard)` is stripped from the URL so the real route is `/settings`. Fixed the nav link, the dashboard CTA, and both Stripe portal redirect URLs. Files: `app/(dashboard)/layout.tsx`, `app/(dashboard)/dashboard/page.tsx`, `app/api/stripe/portal/route.ts`.
+- **T-6 — `stripe_events` migration missing service-role grant [FIXED].** The webhook returned 500 `Idempotency check failed` after a successful checkout, so the plan never flipped to Pro. The setup `GRANT ALL ... TO service_role` predated the `stripe_events` table, so the service-role insert hit "permission denied." Fixed in prod via `grant all on table stripe_events to service_role;`, and now added to the migration + `schema.sql` so fresh installs are covered. See the grant warning in [Database migrations](#database-migrations).
