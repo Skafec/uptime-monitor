@@ -303,6 +303,7 @@ Switch Stripe to **Live mode**, create live keys/product/webhook, update all fou
 | `20260528_tighten_public_rls.sql` | Scope public reads to slug owners (P0-1) | ✅ |
 | `20260701_stripe_events.sql` | Webhook idempotency table + service-role grant (P0-5, T-6) | ✅ |
 | `20260712_consecutive_failures.sql` | Flap-protection counter (P1-1) | ✅ |
+| `20260714_next_check_at.sql` | Per-monitor scheduling + partial indexes (P1-2, P1-5) | ⬜ run in Supabase |
 
 To verify a migration landed, e.g.:
 ```sql
@@ -373,10 +374,10 @@ Tasks are independent; one PR each. Run `npm run lint` and `npm run build` befor
 
 ### P1 — Reliability & correctness
 - **P1-1 Flap protection** — require N consecutive failures before alerting. Add `monitors.consecutive_failures int default 0`; alert only when it crosses `FAILURE_THRESHOLD = 2`. Prevents emailing on a single blip. *(migration + `lib/supabase.ts` type + cron logic)*
-- **P1-2 Respect `interval_minutes` in cron** — add `monitors.next_check_at`; select only due monitors; set `next_check_at = now() + interval` after each check. Makes the column the source of truth (no behaviour change until the cron cadence is finer — confirm with owner before increasing cron frequency).
+- ~~**P1-2 Respect `interval_minutes` in cron**~~ — ✅ done. `monitors.next_check_at` added; cron selects due monitors and reschedules by interval. Requires the cron-job.org schedule set to every 1 minute to deliver Pro 1-minute checks.
 - **P1-3 N+1 on status page** — replace the per-monitor query loop with one `.in('monitor_id', ids)` query + `Object.groupBy`; add `revalidate = 60`.
 - **P1-4 Timezone bucketing** — `groupChecksByDay()` buckets by UTC date prefix; add an optional `timeZone` arg using `Intl.DateTimeFormat('en-CA', …)`. Callers stay on UTC for now.
-- **P1-5 Indexes** — partial indexes on `monitors(is_active)` and `monitors(next_check_at)` where `is_active`.
+- ~~**P1-5 Indexes**~~ — ✅ done alongside P1-2 (partial indexes on `monitors(is_active)` and `monitors(next_check_at)`).
 
 ### P2 — Product / UX
 - **P2-1 Response-time chart** on the monitor detail page (pure SVG, no chart lib; p50/p95/p99).
@@ -422,7 +423,7 @@ SMS/phone alerts, keyword monitoring, port monitoring, SSL-expiry alerts, DNS mo
 ## Known issues & tech debt
 - `proxy.ts` uses Next.js 16 middleware naming (not `middleware.ts`) — verified on Vercel; may need renaming across major Next versions.
 - `AccessGuard` beta gate is a client-side, bundle-exposed password — a soft wall, not a security control. Tracked as **P2-4**.
-- Cron runs every monitor every 5 minutes regardless of `interval_minutes`; Pro 1-minute checks aren't differentiated at the cron level yet. Tracked as **P1-2**.
+- ~~Cron runs every monitor every 5 minutes regardless of `interval_minutes`~~ — **fixed (P1-2):** the cron now selects only monitors due per `next_check_at` and reschedules by `interval_minutes`. **To actually deliver Pro 1-minute checks, set the cron-job.org schedule to every 1 minute** (with 5-min cadence, free and Pro still both effectively run every 5 min).
 - Email alerts are wired up but **silent until Resend is configured** (`RESEND_API_KEY` unset, and `from` is `onboarding@resend.dev` which only mails the account owner). Tracked as **P3-3** + domain setup.
 - Settings can't yet set a notification email separate from the login email. Tracked as **P2-5**.
 

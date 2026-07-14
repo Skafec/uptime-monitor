@@ -19,6 +19,7 @@ create table if not exists monitors (
   last_checked_at timestamptz,
   last_status text check (last_status in ('up', 'down', 'unknown')) default 'unknown',
   consecutive_failures int not null default 0,
+  next_check_at timestamptz not null default now(),
   created_at timestamptz default now()
 );
 
@@ -51,6 +52,9 @@ create table if not exists stripe_events (
 create index if not exists monitors_user_id_idx on monitors(user_id);
 create index if not exists monitor_checks_monitor_id_checked_at_idx on monitor_checks(monitor_id, checked_at desc);
 create index if not exists incidents_monitor_id_idx on incidents(monitor_id);
+-- Partial indexes for the cron's due-monitor query
+create index if not exists monitors_is_active_idx on monitors(is_active) where is_active = true;
+create index if not exists monitors_next_check_at_idx on monitors(next_check_at) where is_active = true;
 
 -- Row Level Security
 alter table profiles enable row level security;

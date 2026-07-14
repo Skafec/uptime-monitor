@@ -87,7 +87,7 @@ export default function AddMonitorForm() {
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400 dark:text-slate-500">
-          Checks will run every 5 minutes from Vercel Edge.
+          Checks run every 5 minutes (every minute on Pro).
         </p>
         <button
           type="submit"
