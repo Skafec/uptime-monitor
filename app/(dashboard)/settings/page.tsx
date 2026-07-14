@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import SlugForm from '@/components/SlugForm'
+import DeleteAccountButton from '@/components/DeleteAccountButton'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
@@ -127,6 +128,15 @@ export default async function SettingsPage() {
             Terms of Service
           </Link>
         </div>
+      </section>
+
+      {/* Danger zone */}
+      <section className="bg-white dark:bg-slate-900 rounded-2xl border border-red-100 dark:border-red-950 p-6 mt-6">
+        <h2 className="font-semibold text-red-600 dark:text-red-400 mb-1">Danger zone</h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+        <DeleteAccountButton />
       </section>
     </div>
   )
