@@ -29,6 +29,27 @@ function isPrivateIpv6(ip: string): boolean {
   )
 }
 
+// DNS lookup with a few retries. Vercel's serverless runtime can throw
+// transient getaddrinfo errors (EAI_AGAIN etc.); without retrying, a single
+// blip made isPublicUrl fail closed and wrongly reject a valid public URL.
+async function lookupAll(
+  host: string,
+  attempts = 3
+): Promise<Array<{ address: string; family: number }>> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await dns.lookup(host, { all: true })
+    } catch (err) {
+      lastErr = err
+      if (i < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)))
+      }
+    }
+  }
+  throw lastErr
+}
+
 export async function isPublicUrl(rawUrl: string): Promise<boolean> {
   let parsed: URL
   try {
@@ -40,12 +61,17 @@ export async function isPublicUrl(rawUrl: string): Promise<boolean> {
   const host = parsed.hostname.toLowerCase()
   if (host === 'localhost' || host.endsWith('.localhost')) return false
   try {
-    const addresses = await dns.lookup(host, { all: true })
+    const addresses = await lookupAll(host)
     for (const { address, family } of addresses) {
       if (family === 4 && isPrivateIpv4(address)) return false
       if (family === 6 && isPrivateIpv6(address)) return false
     }
-  } catch {
+  } catch (err) {
+    // Genuine, persistent resolution failure (after retries). Fail closed —
+    // we can't verify the target is public — but log why so a recurring
+    // false-reject is diagnosable instead of silent.
+    const code = (err as { code?: string })?.code ?? err
+    console.warn(`isPublicUrl: DNS lookup failed for "${host}": ${code}`)
     return false
   }
   return true
