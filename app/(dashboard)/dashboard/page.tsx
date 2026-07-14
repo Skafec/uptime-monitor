@@ -127,7 +127,7 @@ export default async function DashboardPage() {
         <div className="mt-4 p-4 rounded-xl border border-dashed border-gray-200 dark:border-slate-700 text-center">
           <p className="text-sm text-gray-500 dark:text-slate-400">
             Set up your public{' '}
-            <a href="/dashboard/settings" className="text-gray-900 dark:text-white font-medium hover:underline">
+            <a href="/settings" className="text-gray-900 dark:text-white font-medium hover:underline">
               status page
             </a>
             {' '}to share uptime with your customers.

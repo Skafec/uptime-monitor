@@ -43,7 +43,7 @@ export default async function DashboardLayout({
                 Dashboard
               </Link>
               <Link
-                href="/dashboard/settings"
+                href="/settings"
                 className="text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Settings

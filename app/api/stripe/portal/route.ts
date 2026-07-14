@@ -17,12 +17,12 @@ export async function GET() {
     .single()
 
   if (!profile?.stripe_customer_id) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings`)
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings`)
   }
 
   const portal = await createPortalSession({
     customerId: profile.stripe_customer_id,
-    returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings`,
+    returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
   })
 
   return NextResponse.redirect(portal.url)
