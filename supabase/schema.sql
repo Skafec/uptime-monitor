@@ -60,6 +60,10 @@ alter table incidents enable row level security;
 -- RLS on with no policies: denies all anon/authenticated access; the service
 -- role (webhook handler) bypasses RLS and is the only writer.
 alter table stripe_events enable row level security;
+-- Service role bypasses RLS but still needs table privileges. The Stripe
+-- webhook (service role) inserts here; without this grant the insert fails
+-- with "permission denied" → 500 and plan upgrades never persist.
+grant all on table stripe_events to service_role;
 
 -- Profiles policies
 create policy "Users can view own profile"
