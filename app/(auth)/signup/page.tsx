@@ -16,6 +16,7 @@ function SignupForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
 
   const supabase = createBrowserSupabaseClient()
 
@@ -30,7 +31,7 @@ function SignupForm() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -50,15 +51,14 @@ function SignupForm() {
     setSuccess(true)
     setLoading(false)
 
-    // Auto sign-in after signup
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (!signInError) {
+    // If email confirmation is enabled, signUp returns no session — the user
+    // must click the link in their inbox first. Otherwise they're already
+    // signed in and we can go straight to the dashboard.
+    if (data.session) {
       router.push('/dashboard')
       router.refresh()
+    } else {
+      setAwaitingConfirmation(true)
     }
   }
 
@@ -70,8 +70,20 @@ function SignupForm() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Account created!</h3>
-        <p className="text-sm text-gray-500 dark:text-slate-400">Redirecting you to the dashboard...</p>
+        {awaitingConfirmation ? (
+          <>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Check your email</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              We sent a confirmation link to <span className="font-medium">{email}</span>. Click it to
+              activate your account, then sign in.
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Account created!</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Redirecting you to the dashboard...</p>
+          </>
+        )}
       </div>
     )
   }
