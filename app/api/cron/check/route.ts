@@ -31,7 +31,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Fetch all active monitors
+    // Fetch active monitors that are due now. next_check_at is pushed forward
+    // by interval_minutes after each check, so with a 1-minute cron cadence
+    // free monitors (5) are skipped 4 of 5 runs while Pro monitors (1) run
+    // every time — that's what makes the paid 1-minute interval real.
     const { data: monitors, error: monitorsError } = await supabase
       .from('monitors')
       .select(`
@@ -41,9 +44,11 @@ export async function GET(request: Request) {
         url,
         last_status,
         consecutive_failures,
+        interval_minutes,
         profiles!inner(email, plan)
       `)
       .eq('is_active', true)
+      .lte('next_check_at', new Date().toISOString())
 
     if (monitorsError) {
       console.error('Failed to fetch monitors:', monitorsError)
@@ -51,7 +56,7 @@ export async function GET(request: Request) {
     }
 
     if (!monitors || monitors.length === 0) {
-      return NextResponse.json({ message: 'No active monitors', ...results })
+      return NextResponse.json({ message: 'No monitors due', ...results })
     }
 
     // Process monitors in parallel (batch of 10 to avoid hitting limits)
@@ -86,6 +91,7 @@ async function processMonitor(
     url: string
     last_status: 'up' | 'down' | 'unknown'
     consecutive_failures: number
+    interval_minutes: number
     profiles: { email: string; plan: string } | { email: string; plan: string }[]
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,13 +134,19 @@ async function processMonitor(
       declaredStatus = 'down'
     }
 
-    // Update monitor declared status + failure counter
+    // Reschedule the next check by the monitor's interval (5 for free, 1 for
+    // Pro). Guards against a bad/zero interval by falling back to 5.
+    const intervalMinutes = monitor.interval_minutes > 0 ? monitor.interval_minutes : 5
+    const nextCheckAt = new Date(Date.now() + intervalMinutes * 60_000).toISOString()
+
+    // Update monitor declared status + failure counter + next due time
     await supabase
       .from('monitors')
       .update({
         last_status: declaredStatus,
         last_checked_at: checkedAt,
         consecutive_failures: consecutiveFailures,
+        next_check_at: nextCheckAt,
       })
       .eq('id', monitor.id)
 
