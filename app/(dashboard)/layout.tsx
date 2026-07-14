@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import NavLink from '@/components/NavLink'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import SignOutButton from '@/components/SignOutButton'
 
@@ -36,26 +37,12 @@ export default async function DashboardLayout({
               <span className="font-semibold text-gray-900 dark:text-white">UptimeWatch</span>
             </Link>
             <nav className="hidden sm:flex items-center gap-1">
-              <Link
-                href="/dashboard"
-                className="text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/settings"
-                className="text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Settings
-              </Link>
+              <NavLink href="/dashboard">Dashboard</NavLink>
+              <NavLink href="/settings">Settings</NavLink>
               {profile?.status_page_slug && (
-                <Link
-                  href={`/status/${profile.status_page_slug}`}
-                  target="_blank"
-                  className="text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-                >
+                <NavLink href={`/status/${profile.status_page_slug}`} external>
                   Status Page ↗
-                </Link>
+                </NavLink>
               )}
             </nav>
           </div>
