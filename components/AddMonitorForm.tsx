@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function AddMonitorForm() {
+export default function AddMonitorForm({ isPro = false }: { isPro?: boolean }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
+  const [intervalMinutes, setIntervalMinutes] = useState(5)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,7 +25,7 @@ export default function AddMonitorForm() {
       const res = await fetch('/api/monitors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), url: normalizedUrl }),
+        body: JSON.stringify({ name: name.trim(), url: normalizedUrl, interval_minutes: intervalMinutes }),
       })
 
       const data = await res.json()
@@ -85,9 +86,26 @@ export default function AddMonitorForm() {
         </div>
       </div>
 
+      <div>
+        <label htmlFor="monitor-interval" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+          Check interval
+        </label>
+        <select
+          id="monitor-interval"
+          value={intervalMinutes}
+          onChange={(e) => setIntervalMinutes(Number(e.target.value))}
+          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-shadow text-sm"
+        >
+          <option value={5}>Every 5 minutes</option>
+          <option value={1} disabled={!isPro}>
+            Every 1 minute{!isPro ? ' — Pro' : ''}
+          </option>
+        </select>
+      </div>
+
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400 dark:text-slate-500">
-          Checks run every 5 minutes (every minute on Pro).
+          {isPro ? '1-minute checks available on your plan.' : 'Upgrade to Pro for 1-minute checks.'}
         </p>
         <button
           type="submit"
