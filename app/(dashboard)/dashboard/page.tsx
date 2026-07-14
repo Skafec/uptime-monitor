@@ -106,7 +106,7 @@ export default async function DashboardPage() {
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-6">
         <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Add new monitor</h2>
         {canAddMore ? (
-          <AddMonitorForm />
+          <AddMonitorForm isPro={isPro} />
         ) : (
           <div className="text-center py-8">
             <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
