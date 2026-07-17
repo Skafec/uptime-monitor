@@ -40,6 +40,10 @@ export default async function DashboardPage({
 
   const upCount = monitors?.filter((m) => m.last_status === 'up').length ?? 0
   const downCount = monitors?.filter((m) => m.last_status === 'down').length ?? 0
+  const pausedCount = monitors?.filter((m) => !m.is_active).length ?? 0
+  // A downgraded free user can hold more than 3 monitors (excess paused), so
+  // clamp the "remaining" count so it never goes negative.
+  const freeRemaining = Math.max(0, 3 - monitorCount)
 
   return (
     <div className="fade-in">
@@ -57,8 +61,9 @@ export default async function DashboardPage({
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Monitors</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-            {monitorCount} monitor{monitorCount !== 1 ? 's' : ''} active
-            {!isPro && ` · ${3 - monitorCount} remaining on free plan`}
+            {monitorCount} monitor{monitorCount !== 1 ? 's' : ''}
+            {pausedCount > 0 && ` · ${pausedCount} paused`}
+            {!isPro && ` · ${freeRemaining} remaining on free plan`}
           </p>
         </div>
 
@@ -92,6 +97,14 @@ export default async function DashboardPage({
           >
             Upgrade to Pro — $9/mo
           </a>
+        </div>
+      )}
+
+      {/* Paused-over-limit notice */}
+      {!isPro && pausedCount > 0 && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-sm text-amber-800 dark:text-amber-300">
+          {pausedCount} monitor{pausedCount !== 1 ? 's are' : ' is'} paused — the free plan runs 3 active monitors.{' '}
+          <a href="/api/stripe/checkout" className="font-medium underline">Upgrade to Pro</a> or delete some to reactivate.
         </div>
       )}
 
