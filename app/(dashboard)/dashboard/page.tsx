@@ -8,7 +8,12 @@ export const metadata: Metadata = {
   title: 'Dashboard',
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ confirmed?: string }>
+}) {
+  const { confirmed } = await searchParams
   const supabase = await createServerSupabaseClient()
 
   const {
@@ -38,6 +43,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="fade-in">
+      {confirmed === '1' && (
+        <div className="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-sm text-green-800 dark:text-green-300 flex items-center gap-2">
+          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Your email is confirmed — welcome to UptimeWatch! Add your first monitor below.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
