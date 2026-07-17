@@ -93,7 +93,6 @@ uptime-monitor/
 │   ├── DeleteMonitorButton.tsx      # Client button — DELETE /api/monitors/[id]
 │   ├── SignOutButton.tsx            # supabase.auth.signOut()
 │   ├── ToggleMonitorButton.tsx      # Pause/resume a monitor
-│   └── AccessGuard.tsx              # Client-side beta gate (see Known issues — insecure, to be replaced)
 ├── lib/
 │   ├── supabase.ts                  # Server + service-role Supabase clients, Database types
 │   ├── supabase-browser.ts          # Browser-side Supabase client
@@ -240,7 +239,6 @@ Managed in **Vercel → Settings → Environment Variables** for production; `.e
 | `STRIPE_PRO_PRICE_ID` | Stripe → Products → Pro price (`price_…`) |
 | `CRON_SECRET` | `openssl rand -hex 32` — must match the cron-job.org header |
 | `NEXT_PUBLIC_APP_URL` | Your deployed URL |
-| `NEXT_PUBLIC_ACCESS_PASSWORD` | Beta gate password (temporary — see Known issues) |
 
 ---
 
@@ -383,7 +381,7 @@ Tasks are independent; one PR each. Run `npm run lint` and `npm run build` befor
 - **P2-1 Response-time chart** on the monitor detail page (pure SVG, no chart lib; p50/p95/p99).
 - **P2-2 Incident list on the public status page** (needs a public `incidents` RLS policy scoped like P0-1).
 - **P2-3 Custom display name** for the status page (`profiles.display_name`) instead of the email prefix.
-- **P2-4 Replace `AccessGuard`** — it ships the password in the bundle (`NEXT_PUBLIC_ACCESS_PASSWORD`) and "denies" by wiping `document.body`. Either remove it (real auth already exists) or move to a server-validated HttpOnly-cookie gate in `proxy.ts`.
+- ~~**P2-4 Replace `AccessGuard`**~~ — ✅ done: the client-side beta gate was **removed** for public launch (real Supabase auth already protects the app). Deleted `components/AccessGuard.tsx`, the layout wrapper, the empty `app/gate` + `app/api/gate` dirs, and the `NEXT_PUBLIC_ACCESS_PASSWORD` env var.
 - **P2-5 Notification email** separate from login email (`profiles.notification_email`, preferred in the cron alert path).
 
 ### P3 — Tech debt
@@ -422,7 +420,7 @@ SMS/phone alerts, keyword monitoring, port monitoring, SSL-expiry alerts, DNS mo
 
 ## Known issues & tech debt
 - `proxy.ts` uses Next.js 16 middleware naming (not `middleware.ts`) — verified on Vercel; may need renaming across major Next versions.
-- `AccessGuard` beta gate is a client-side, bundle-exposed password — a soft wall, not a security control. Tracked as **P2-4**.
+- ~~`AccessGuard` beta gate is a client-side, bundle-exposed password~~ — removed for public launch (P2-4). Remember to delete `NEXT_PUBLIC_ACCESS_PASSWORD` from Vercel env vars.
 - ~~Cron runs every monitor every 5 minutes regardless of `interval_minutes`~~ — **fixed (P1-2):** the cron now selects only monitors due per `next_check_at` and reschedules by `interval_minutes`. **To actually deliver Pro 1-minute checks, set the cron-job.org schedule to every 1 minute** (with 5-min cadence, free and Pro still both effectively run every 5 min).
 - Email alerts are wired up but **silent until Resend is configured** (`RESEND_API_KEY` unset, and `from` is `onboarding@resend.dev` which only mails the account owner). Tracked as **P3-3** + domain setup.
 - Settings can't yet set a notification email separate from the login email. Tracked as **P2-5**.
