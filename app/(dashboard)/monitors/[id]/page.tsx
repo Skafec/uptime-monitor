@@ -5,6 +5,7 @@ import StatusBadge from '@/components/StatusBadge'
 import UptimeChart from '@/components/UptimeChart'
 import DeleteMonitorButton from '@/components/DeleteMonitorButton'
 import ToggleMonitorButton from '@/components/ToggleMonitorButton'
+import EditMonitorForm from '@/components/EditMonitorForm'
 import type { Metadata } from 'next'
 
 interface Props {
@@ -51,6 +52,13 @@ export default async function MonitorDetailPage({ params }: Props) {
     .single()
 
   if (!monitor) notFound()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
+  const isPro = profile?.plan === 'pro'
 
   // Get last 90 days of checks
   const ninetyDaysAgo = new Date()
@@ -117,6 +125,22 @@ export default async function MonitorDetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Edit monitor */}
+      <details className="mb-6 bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800">
+        <summary className="cursor-pointer select-none p-5 font-semibold text-sm text-gray-900 dark:text-white">
+          Edit monitor
+        </summary>
+        <div className="px-5 pb-5 border-t border-gray-100 dark:border-slate-800 pt-5">
+          <EditMonitorForm
+            monitorId={monitor.id}
+            initialName={monitor.name}
+            initialUrl={monitor.url}
+            initialInterval={monitor.interval_minutes}
+            isPro={isPro}
+          />
+        </div>
+      </details>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
