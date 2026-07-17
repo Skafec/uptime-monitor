@@ -1,9 +1,44 @@
 import { NextResponse } from 'next/server'
 import { constructWebhookEvent } from '@/lib/stripe'
 import { createServiceSupabaseClient } from '@/lib/supabase'
+import type { Database } from '@/lib/supabase'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type Stripe from 'stripe'
 
 export const runtime = 'nodejs'
+
+const FREE_MONITOR_LIMIT = 3
+
+// Downgrade a customer to Free and enforce the plan on their existing data:
+// revoke the Pro-only 1-minute interval, and pause monitors beyond the free
+// limit (keeping the oldest ones active) so a downgraded user doesn't keep
+// Pro benefits. Data is preserved — paused monitors can be reactivated.
+async function downgradeToFree(supabase: SupabaseClient<Database>, customerId: string) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .update({ plan: 'free' })
+    .eq('stripe_customer_id', customerId)
+    .select('id')
+    .single()
+
+  if (!profile) return
+
+  await supabase
+    .from('monitors')
+    .update({ interval_minutes: 5 })
+    .eq('user_id', profile.id)
+
+  const { data: monitors } = await supabase
+    .from('monitors')
+    .select('id')
+    .eq('user_id', profile.id)
+    .order('created_at', { ascending: true })
+
+  if (monitors && monitors.length > FREE_MONITOR_LIMIT) {
+    const excessIds = monitors.slice(FREE_MONITOR_LIMIT).map((m) => m.id)
+    await supabase.from('monitors').update({ is_active: false }).in('id', excessIds)
+  }
+}
 
 export async function POST(request: Request) {
   const body = await request.text()
@@ -104,11 +139,8 @@ export async function POST(request: Request) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        // Downgrade user back to free
-        await supabase
-          .from('profiles')
-          .update({ plan: 'free' })
-          .eq('stripe_customer_id', customerId)
+        // Downgrade user back to free + enforce free-plan limits
+        await downgradeToFree(supabase, customerId)
 
         console.log(`Customer ${customerId} downgraded to Free (subscription cancelled)`)
         break
@@ -129,10 +161,7 @@ export async function POST(request: Request) {
           subscription.status === 'unpaid' ||
           subscription.status === 'past_due'
         ) {
-          await supabase
-            .from('profiles')
-            .update({ plan: 'free' })
-            .eq('stripe_customer_id', customerId)
+          await downgradeToFree(supabase, customerId)
         }
         break
       }
