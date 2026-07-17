@@ -75,7 +75,7 @@ function SignupForm() {
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Check your email</h3>
             <p className="text-sm text-gray-500 dark:text-slate-400">
               We sent a confirmation link to <span className="font-medium">{email}</span>. Click it to
-              activate your account, then sign in.
+              confirm your account — you&apos;ll be taken straight to your dashboard.
             </p>
           </>
         ) : (

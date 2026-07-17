@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      // Flag the confirmation so the destination can acknowledge it.
+      const redirectUrl = new URL(next, origin)
+      redirectUrl.searchParams.set('confirmed', '1')
+      return NextResponse.redirect(redirectUrl)
     }
   }
 
