@@ -418,6 +418,35 @@ SMS/phone alerts, keyword monitoring, port monitoring, SSL-expiry alerts, DNS mo
 
 ---
 
+## Competitive landscape & positioning
+
+_Analysis dated 2026-07-20. Main comparable: **OnlineOrNot** ([onlineornot.com](https://onlineornot.com/)) — established self-funded indie (~7k users, ~17M checks/week)._
+
+| | **UptimeWatch (us)** | **OnlineOrNot** |
+|---|---|---|
+| Free tier | 3 monitors, 5-min, **email only** | 3 monitors, 3-min, email + Slack + Discord + Telegram |
+| Paid | **$9/mo — unlimited monitors**, 1-min | from $15/mo — 10 monitors, 30-sec |
+| Alert channels | **email only** | Slack, Discord, Telegram, SMS, PagerDuty, OpsGenie, Teams, webhooks |
+| Check interval | 5-min / 1-min (Pro) | 3-min / **30-sec** |
+| Multi-region | ❌ single region | ✅ geo + multi-region |
+| SSL expiry | ❌ | ✅ |
+| Cron/heartbeat/API checks | ❌ | ✅ |
+| Status pages | public | public + private, custom domain, maintenance windows |
+| Teams / API / CLI | ❌ | ✅ |
+
+**Where we win:** price + simplicity — $9/mo **unlimited** monitors undercuts their $15/10; simpler product for solo devs / small sites.
+**Where we lose:** breadth — most glaring is **email-only alerts** (they give Slack/Discord/Telegram away on the *free* tier).
+
+**Positioning:** _"Dead-simple uptime monitoring, honest price — $9/mo, unlimited monitors."_ Target solo devs & small sites, not "software teams." Simplicity is the differentiator; don't chase feature parity.
+
+**Competitive priorities (highest-leverage first):**
+1. **Slack + Discord webhook alerts** — closes the most visible gap (table-stakes; they give it free). Natural Pro upsell. Needs a `slack_webhook_url`/`notifications` field + settings UI + hook into the cron down/recovery path.
+2. **SSL-certificate expiry alerts** — common, cheap to build, high perceived value.
+3. **`/alternatives/onlineornot` comparison page** — capture their branded search traffic; lead with price + unlimited monitors + simplicity.
+4. _Later / harder on Vercel Hobby:_ multi-region checks, 30-second intervals.
+
+---
+
 ## Known issues & tech debt
 - `proxy.ts` uses Next.js 16 middleware naming (not `middleware.ts`) — verified on Vercel; may need renaming across major Next versions.
 - ~~`AccessGuard` beta gate is a client-side, bundle-exposed password~~ — removed for public launch (P2-4). Remember to delete `NEXT_PUBLIC_ACCESS_PASSWORD` from Vercel env vars.
