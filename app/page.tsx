@@ -1,8 +1,29 @@
 import Link from 'next/link'
 
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://uptimewatchhq.com').replace(/\/$/, '')
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'UptimeWatch',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  url: APP_URL,
+  description:
+    'Website uptime monitoring with instant email alerts, public status pages, and beautiful dashboards.',
+  offers: [
+    { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD' },
+    { '@type': 'Offer', name: 'Pro', price: '9', priceCurrency: 'USD' },
+  ],
+}
+
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Nav */}
       <header className="border-b border-gray-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">

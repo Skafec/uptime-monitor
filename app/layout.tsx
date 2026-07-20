@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://uptimewatchhq.com'),
   title: {
     default: 'UptimeWatch — Monitor your sites 24/7',
     template: '%s | UptimeWatch',
